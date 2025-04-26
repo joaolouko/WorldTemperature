@@ -1,7 +1,14 @@
 from flask import Flask, request, redirect, render_template_string
 import os
+from pymongo import MongoClient
 
 app = Flask(__name__)
+
+#connection
+
+client = MongoClient('mongodb+srv://pires:13795272@perezdb.mfxofrn.mongodb.net/?retryWrites=true&w=majority&appName=perezdb')
+db = client['worldTemperature']
+collection = db['worldtemp']
 
 # In-memory "database" (cleared when server restarts)
 posts = []
@@ -85,13 +92,18 @@ HTML_PAGE = """
 @app.route("/", methods=["GET", "POST"])
 def home():
     if request.method == "POST":
-        post = {
-            "name": request.form["name"],
-            "location": request.form["location"],
-            "temperature": request.form["temperature"]
-        }
-        posts.append(post)
+        name = request.form.get("name")
+        location = request.form.get("location")
+        temperature = request.form.get("temperature")
+
+        collection.insert_one({
+            "name": name,
+            "location": location,
+            "temperature": temperature
+        })
         return redirect("/")
+
+    posts = list(collection.find().sort("_id", -1))
     return render_template_string(HTML_PAGE, posts=posts)
 
 if __name__ == "__main__":
